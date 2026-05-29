@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: meu_redis_cache
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    container_name: meu_backend_ruby
+    ports:
+      - "4567:4567"
+    depends_on:
+      - redis
+
+  frontend:
+    build: ./frontend
+    container_name: meu_frontend_vue
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend

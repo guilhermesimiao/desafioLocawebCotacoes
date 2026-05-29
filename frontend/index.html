@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Cotações - InfoMoney Style</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+    <div id="app" class="container mx-auto p-6">
+        <header class="mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-3xl font-bold text-green-400">📊 Mercado em Tempo Real</h1>
+            <p class="text-gray-400 text-sm">Atualizando automaticamente via WebWorker (Cache Ativo)</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div v-for="asset in assets" :key="asset.symbol" class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xl font-bold text-gray-300">{{ asset.symbol == 'BRL=X' ? 'DÓLAR' : asset.symbol.replace('^', '') }}</span>
+                    <span :class="asset.change >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'" class="px-2 py-1 text-xs rounded font-bold">
+                        {{ asset.change >= 0 ? '▲' : '▼' }} {{ asset.change.toFixed(2) }}%
+                    </span>
+                </div>
+                <div class="text-3xl font-extrabold">
+                    R$ {{ asset.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }}
+                </div>
+                <div class="text-xs text-gray-500 mt-2">Nome: {{ asset.name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const assets = ref([]);
+
+                onMounted(() => {
+                    const worker = new Worker('worker.js');
+                    
+                    worker.onmessage = function(event) {
+                        if (event.data && event.data.results) {
+                            assets.value = event.data.results.map(item => ({
+                                symbol: item.symbol,
+                                name: item.longName,
+                                price: item.regularMarketPrice,
+                                change: item.regularMarketChangePercent
+                            }));
+                        }
+                    };
+                });
+
+                return { assets };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
